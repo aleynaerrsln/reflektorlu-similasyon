@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export class SceneManager {
   constructor(canvas) {
@@ -10,7 +9,6 @@ export class SceneManager {
 
     this.initRenderer();
     this.initCamera();
-    this.initControls();
 
     window.addEventListener('resize', () => this.onResize());
   }
@@ -30,64 +28,25 @@ export class SceneManager {
   }
 
   initCamera() {
-    this.camera = new THREE.PerspectiveCamera(
-      50,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      500
+    // Orthographic camera - fixed side view, tunnel pinned to top
+    const sceneLength = 60;
+    const halfWidth = sceneLength / 2 + 4;
+    const aspect = window.innerWidth / window.innerHeight;
+    const totalHeight = (2 * halfWidth) / aspect;
+
+    // Asymmetric frustum: small space above tunnel, rest below
+    // This pushes the tunnel to the top of the screen
+    const top = 4.5;
+    const bottom = -(totalHeight - 4.5);
+
+    this.camera = new THREE.OrthographicCamera(
+      -halfWidth, halfWidth,
+      top, bottom,
+      0.1, 100
     );
-    // Position camera to see entire track from start to finish
-    this.camera.position.set(25, 18, 5);
-    this.camera.lookAt(0, 0, -30);
-  }
-
-  initControls() {
-    this.controls = new OrbitControls(this.camera, this.canvas);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.maxPolarAngle = Math.PI / 2.1;
-    this.controls.minDistance = 5;
-    this.controls.maxDistance = 150;
-    this.controls.target.set(0, 0, -30);
-
-    // Cockpit mode state
-    this.cockpitMode = false;
-    this.savedCameraState = null;
-  }
-
-  enableCockpitMode() {
-    if (this.cockpitMode) return;
-    // Save current orbit camera state
-    this.savedCameraState = {
-      position: this.camera.position.clone(),
-      target: this.controls.target.clone(),
-      fov: this.camera.fov
-    };
-    this.controls.enabled = false;
-    this.camera.fov = 90;
-    this.camera.updateProjectionMatrix();
-    this.cockpitMode = true;
-  }
-
-  disableCockpitMode() {
-    if (!this.cockpitMode) return;
-    this.cockpitMode = false;
-    this.controls.enabled = true;
-    if (this.savedCameraState) {
-      this.camera.position.copy(this.savedCameraState.position);
-      this.controls.target.copy(this.savedCameraState.target);
-      this.camera.fov = this.savedCameraState.fov;
-      this.camera.updateProjectionMatrix();
-    }
-  }
-
-  toggleCockpitMode() {
-    if (this.cockpitMode) {
-      this.disableCockpitMode();
-    } else {
-      this.enableCockpitMode();
-    }
-    return this.cockpitMode;
+    // Side view: looking from +X towards the track center
+    this.camera.position.set(15, 1.5, -sceneLength / 2);
+    this.camera.lookAt(0, 0.8, -sceneLength / 2);
   }
 
   onUpdate(callback) {
@@ -95,7 +54,15 @@ export class SceneManager {
   }
 
   onResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const sceneLength = 60;
+    const halfWidth = sceneLength / 2 + 4;
+    const aspect = window.innerWidth / window.innerHeight;
+    const totalHeight = (2 * halfWidth) / aspect;
+
+    this.camera.left = -halfWidth;
+    this.camera.right = halfWidth;
+    this.camera.top = 4.5;
+    this.camera.bottom = -(totalHeight - 4.5);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
@@ -107,7 +74,6 @@ export class SceneManager {
       const elapsed = this.clock.getElapsedTime();
 
       this.updateCallbacks.forEach(cb => cb(delta, elapsed));
-      this.controls.update();
       this.renderer.render(this.scene, this.camera);
     };
     animate();

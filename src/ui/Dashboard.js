@@ -158,7 +158,6 @@ export class Dashboard {
         <button class="control-btn" id="btn-reset">Sifirla</button>
         <button class="control-btn" id="btn-start">Baslat</button>
         <button class="control-btn danger" id="btn-stop">Durdur</button>
-        <button class="control-btn" id="btn-cockpit">Kokpit Modu [C]</button>
         <div class="sim-slider-container">
           <span class="metric-label" style="font-size:11px;">Konum:</span>
           <input type="range" class="sim-slider" id="sim-slider" min="0" max="${this.trackLength}" step="0.1" value="0" />
@@ -181,7 +180,6 @@ export class Dashboard {
       btnStart: document.getElementById('btn-start'),
       btnStop: document.getElementById('btn-stop'),
       dataSource: document.getElementById('data-source'),
-      btnCockpit: document.getElementById('btn-cockpit'),
       lastStripe: document.getElementById('last-stripe'),
       nextStripe: document.getElementById('next-stripe'),
       activeZone: document.getElementById('active-zone'),
@@ -245,29 +243,6 @@ export class Dashboard {
     this.els.btnStop.addEventListener('click', () => {
       this.simRunning = false;
       this.els.btnStart.classList.remove('active');
-    });
-
-    // Cockpit mode toggle
-    this.els.btnCockpit.addEventListener('click', () => {
-      eventBus.emit('cockpit:toggle');
-    });
-
-    eventBus.on('cockpit:state', (active) => {
-      if (active) {
-        this.els.btnCockpit.classList.add('active');
-        this.els.btnCockpit.textContent = 'Dis Gorunum [C]';
-      } else {
-        this.els.btnCockpit.classList.remove('active');
-        this.els.btnCockpit.textContent = 'Kokpit Modu [C]';
-      }
-    });
-
-    // Keyboard shortcut: C key
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'c' || e.key === 'C') {
-        if (e.target.tagName === 'INPUT') return;
-        eventBus.emit('cockpit:toggle');
-      }
     });
 
     this.els.btnReset.addEventListener('click', () => {

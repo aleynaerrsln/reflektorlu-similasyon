@@ -25,32 +25,10 @@ export class HyperloopScene {
     eventBus.on('plc:position', (position) => {
       this.vehicle.setPosition(position);
     });
-
-    eventBus.on('cockpit:toggle', () => {
-      const active = this.sceneManager.toggleCockpitMode();
-      if (active) {
-        // Hide vehicle body in cockpit mode so it doesn't block the view
-        this.vehicle.group.visible = false;
-      } else {
-        this.vehicle.group.visible = true;
-      }
-      eventBus.emit('cockpit:state', active);
-    });
   }
 
   update(delta) {
     this.vehicle.update(delta);
-
-    // In cockpit mode, camera fixed inside vehicle looking straight forward
-    if (this.sceneManager.cockpitMode) {
-      const vehicleZ = this.vehicle.group.position.z;
-      const cam = this.sceneManager.camera;
-
-      // Fixed driver seat height, looking perfectly straight down the track
-      cam.position.set(0, 0.75, vehicleZ + 0.5);
-      cam.rotation.set(0, Math.PI, 0);
-      cam.lookAt(0, 0.75, vehicleZ - 100);
-    }
 
     const data = this.vehicle.getPositionData();
     eventBus.emit('vehicle:telemetry', data);
