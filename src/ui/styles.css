@@ -98,7 +98,7 @@ body {
   right: 12px;
   bottom: 60px;
   display: grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
+  grid-template-columns: 0.55fr 1.4fr 1fr;
   gap: 10px;
   pointer-events: auto;
   align-content: start;
@@ -327,7 +327,7 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .speed-gauge {
@@ -339,7 +339,7 @@ body {
 .speed-gauge-text {
   position: absolute;
   bottom: 12px;
-  left: 50%;
+  left: 100px;
   transform: translateX(-50%);
   text-align: center;
   pointer-events: none;
