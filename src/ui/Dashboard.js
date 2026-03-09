@@ -96,11 +96,69 @@ export class Dashboard {
         </div>
       </div>
 
+      <!-- Right Sensor Panel -->
+      <div class="sensor-panel">
+        <!-- Omron Sensor 1 (Front) -->
+        <div class="panel-card">
+          <div class="sensor-header">
+            <div class="sensor-icon front">S1</div>
+            <div>
+              <h3 style="margin-bottom:0;">Omron Sensor 1 <span style="color:#00aaff;">(On)</span></h3>
+              <span class="sensor-status idle" id="sensor1-status">Bekleniyor</span>
+            </div>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Gecilen Cizgi No</span>
+            <span class="stripe-number" id="sensor1-stripe-num">-<span class="stripe-total"></span></span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Cizgi Konumu</span>
+            <span><span class="metric-value" id="sensor1-stripe-pos" style="font-size:16px;">-</span></span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Sonraki Cizgi</span>
+            <span><span class="metric-value" id="sensor1-next" style="font-size:14px; color:#556677;">-</span></span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Mesafe (Sonrakine)</span>
+            <span><span class="metric-value" id="sensor1-dist" style="font-size:14px; color:#00aaff;">-</span></span>
+          </div>
+        </div>
+
+        <!-- Omron Sensor 2 (Rear) -->
+        <div class="panel-card">
+          <div class="sensor-header">
+            <div class="sensor-icon rear">S2</div>
+            <div>
+              <h3 style="margin-bottom:0;">Omron Sensor 2 <span style="color:#ffaa00;">(Arka)</span></h3>
+              <span class="sensor-status idle" id="sensor2-status">Bekleniyor</span>
+            </div>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Gecilen Cizgi No</span>
+            <span class="stripe-number" id="sensor2-stripe-num">-<span class="stripe-total"></span></span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Cizgi Konumu</span>
+            <span><span class="metric-value" id="sensor2-stripe-pos" style="font-size:16px;">-</span></span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Sonraki Cizgi</span>
+            <span><span class="metric-value" id="sensor2-next" style="font-size:14px; color:#556677;">-</span></span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Mesafe (Sonrakine)</span>
+            <span><span class="metric-value" id="sensor2-dist" style="font-size:14px; color:#ffaa00;">-</span></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Bottom Control Bar -->
       <div class="control-bar">
         <button class="control-btn" id="btn-reset">Sifirla</button>
         <button class="control-btn" id="btn-start">Baslat</button>
         <button class="control-btn danger" id="btn-stop">Durdur</button>
+        <button class="control-btn" id="btn-cockpit">Kokpit Modu [C]</button>
         <div class="sim-slider-container">
           <span class="metric-label" style="font-size:11px;">Konum:</span>
           <input type="range" class="sim-slider" id="sim-slider" min="0" max="${this.trackLength}" step="0.1" value="0" />
@@ -123,9 +181,22 @@ export class Dashboard {
       btnStart: document.getElementById('btn-start'),
       btnStop: document.getElementById('btn-stop'),
       dataSource: document.getElementById('data-source'),
+      btnCockpit: document.getElementById('btn-cockpit'),
       lastStripe: document.getElementById('last-stripe'),
       nextStripe: document.getElementById('next-stripe'),
-      activeZone: document.getElementById('active-zone')
+      activeZone: document.getElementById('active-zone'),
+      // Sensor 1 (Front)
+      sensor1Status: document.getElementById('sensor1-status'),
+      sensor1StripeNum: document.getElementById('sensor1-stripe-num'),
+      sensor1StripePos: document.getElementById('sensor1-stripe-pos'),
+      sensor1Next: document.getElementById('sensor1-next'),
+      sensor1Dist: document.getElementById('sensor1-dist'),
+      // Sensor 2 (Rear)
+      sensor2Status: document.getElementById('sensor2-status'),
+      sensor2StripeNum: document.getElementById('sensor2-stripe-num'),
+      sensor2StripePos: document.getElementById('sensor2-stripe-pos'),
+      sensor2Next: document.getElementById('sensor2-next'),
+      sensor2Dist: document.getElementById('sensor2-dist')
     };
   }
 
@@ -151,6 +222,7 @@ export class Dashboard {
 
       // Update stripe info
       this.updateStripeInfo(data.current);
+      this.updateSensorCards(data.current);
     });
 
     // Simulation slider
@@ -173,6 +245,29 @@ export class Dashboard {
     this.els.btnStop.addEventListener('click', () => {
       this.simRunning = false;
       this.els.btnStart.classList.remove('active');
+    });
+
+    // Cockpit mode toggle
+    this.els.btnCockpit.addEventListener('click', () => {
+      eventBus.emit('cockpit:toggle');
+    });
+
+    eventBus.on('cockpit:state', (active) => {
+      if (active) {
+        this.els.btnCockpit.classList.add('active');
+        this.els.btnCockpit.textContent = 'Dis Gorunum [C]';
+      } else {
+        this.els.btnCockpit.classList.remove('active');
+        this.els.btnCockpit.textContent = 'Kokpit Modu [C]';
+      }
+    });
+
+    // Keyboard shortcut: C key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'c' || e.key === 'C') {
+        if (e.target.tagName === 'INPUT') return;
+        eventBus.emit('cockpit:toggle');
+      }
     });
 
     this.els.btnReset.addEventListener('click', () => {
@@ -232,4 +327,50 @@ export class Dashboard {
 
     this.els.activeZone.textContent = zone;
   }
+
+  updateSensorCards(currentPos) {
+    // Front sensor: 0.8m ahead of vehicle center
+    // Rear sensor: 0.8m behind vehicle center
+    const sensorOffsets = [0.8, -0.8];
+    const sensorEls = [
+      { status: this.els.sensor1Status, num: this.els.sensor1StripeNum, pos: this.els.sensor1StripePos, next: this.els.sensor1Next, dist: this.els.sensor1Dist },
+      { status: this.els.sensor2Status, num: this.els.sensor2StripeNum, pos: this.els.sensor2StripePos, next: this.els.sensor2Next, dist: this.els.sensor2Dist }
+    ];
+
+    const totalStripes = this.stripePositions.length;
+
+    sensorOffsets.forEach((offset, i) => {
+      const sensorPos = currentPos + offset;
+      const els = sensorEls[i];
+
+      const passed = this.stripePositions.filter(p => p <= sensorPos);
+      const upcoming = this.stripePositions.filter(p => p > sensorPos);
+
+      const lastStripe = passed.length > 0 ? passed[passed.length - 1] : null;
+      const nextStripe = upcoming.length > 0 ? upcoming[0] : null;
+      const stripeIndex = passed.length;
+
+      if (lastStripe !== null) {
+        els.status.textContent = 'Okuyor';
+        els.status.className = 'sensor-status reading';
+        els.num.innerHTML = `${stripeIndex}<span class="stripe-total"> / ${totalStripes}</span>`;
+        els.pos.textContent = `${lastStripe}m`;
+      } else {
+        els.status.textContent = 'Bekleniyor';
+        els.status.className = 'sensor-status idle';
+        els.num.innerHTML = `-<span class="stripe-total"></span>`;
+        els.pos.textContent = '-';
+      }
+
+      if (nextStripe !== null) {
+        els.next.textContent = `${nextStripe}m (#${stripeIndex + 1})`;
+        const dist = (nextStripe - sensorPos).toFixed(1);
+        els.dist.textContent = `${dist}m`;
+      } else {
+        els.next.textContent = '-';
+        els.dist.textContent = '-';
+      }
+    });
+  }
+
 }

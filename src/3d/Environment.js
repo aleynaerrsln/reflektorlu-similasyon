@@ -63,6 +63,6 @@ export class Environment {
 
   setupBackground() {
     this.scene.background = new THREE.Color(0x0a0a1a);
-    this.scene.fog = new THREE.FogExp2(0x0a0a1a, 0.008);
+    this.scene.fog = new THREE.FogExp2(0x0a0a1a, 0.003);
   }
 }

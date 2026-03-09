@@ -36,8 +36,9 @@ export class SceneManager {
       0.1,
       500
     );
-    this.camera.position.set(15, 10, 20);
-    this.camera.lookAt(0, 0, 0);
+    // Position camera to see entire track from start to finish
+    this.camera.position.set(25, 18, 5);
+    this.camera.lookAt(0, 0, -30);
   }
 
   initControls() {
@@ -46,7 +47,47 @@ export class SceneManager {
     this.controls.dampingFactor = 0.05;
     this.controls.maxPolarAngle = Math.PI / 2.1;
     this.controls.minDistance = 5;
-    this.controls.maxDistance = 100;
+    this.controls.maxDistance = 150;
+    this.controls.target.set(0, 0, -30);
+
+    // Cockpit mode state
+    this.cockpitMode = false;
+    this.savedCameraState = null;
+  }
+
+  enableCockpitMode() {
+    if (this.cockpitMode) return;
+    // Save current orbit camera state
+    this.savedCameraState = {
+      position: this.camera.position.clone(),
+      target: this.controls.target.clone(),
+      fov: this.camera.fov
+    };
+    this.controls.enabled = false;
+    this.camera.fov = 90;
+    this.camera.updateProjectionMatrix();
+    this.cockpitMode = true;
+  }
+
+  disableCockpitMode() {
+    if (!this.cockpitMode) return;
+    this.cockpitMode = false;
+    this.controls.enabled = true;
+    if (this.savedCameraState) {
+      this.camera.position.copy(this.savedCameraState.position);
+      this.controls.target.copy(this.savedCameraState.target);
+      this.camera.fov = this.savedCameraState.fov;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  toggleCockpitMode() {
+    if (this.cockpitMode) {
+      this.disableCockpitMode();
+    } else {
+      this.enableCockpitMode();
+    }
+    return this.cockpitMode;
   }
 
   onUpdate(callback) {

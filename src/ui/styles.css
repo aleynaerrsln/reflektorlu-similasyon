@@ -180,6 +180,83 @@ body {
   color: #556677;
 }
 
+/* Sensor Panel - Right Side */
+.sensor-panel {
+  position: absolute;
+  top: 80px;
+  right: 16px;
+  width: 280px;
+  pointer-events: auto;
+}
+
+.sensor-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.sensor-icon.front {
+  background: rgba(0, 170, 255, 0.15);
+  color: #00aaff;
+  border: 1px solid rgba(0, 170, 255, 0.3);
+}
+
+.sensor-icon.rear {
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.sensor-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sensor-header h3 {
+  margin-bottom: 0 !important;
+}
+
+.sensor-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sensor-status.reading {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00cc66;
+}
+
+.sensor-status.idle {
+  background: rgba(100, 100, 120, 0.15);
+  color: #667788;
+}
+
+.stripe-number {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.stripe-number .stripe-total {
+  font-size: 14px;
+  color: #556677;
+  font-weight: 400;
+}
+
 /* Speed Display */
 .speed-display {
   text-align: center;
