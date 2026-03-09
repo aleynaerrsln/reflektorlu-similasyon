@@ -57,11 +57,7 @@ export class Dashboard {
               <div class="panel-card card-speed">
                 <h3>Hiz</h3>
                 <div class="speed-gauge-wrap">
-                  <canvas id="speed-gauge" class="speed-gauge" width="200" height="130"></canvas>
-                  <div class="speed-gauge-text">
-                    <span class="speed-value" id="speed-value">0</span>
-                    <span class="speed-unit">km/h</span>
-                  </div>
+                  <canvas id="speed-gauge" class="speed-gauge" width="260" height="190"></canvas>
                 </div>
               </div>
               <div class="panel-card card-position">
@@ -308,7 +304,6 @@ export class Dashboard {
   cacheElements() {
     this.els = {
       speedGauge: document.getElementById('speed-gauge'),
-      speedValue: document.getElementById('speed-value'),
       posCurrent: document.getElementById('pos-current'),
       posRemaining: document.getElementById('pos-remaining'),
       posPercent: document.getElementById('pos-percent'),
@@ -360,7 +355,6 @@ export class Dashboard {
       lastPosition = data.current;
       lastTime = now;
 
-      this.els.speedValue.textContent = speed.toFixed(0);
       this.drawSpeedGauge(speed);
       this.els.posCurrent.textContent = data.current.toFixed(1);
       this.els.posRemaining.textContent = data.remaining.toFixed(1);
@@ -500,96 +494,343 @@ export class Dashboard {
     ctx.clearRect(0, 0, w, h);
 
     const cx = w / 2;
-    const cy = h - 10;
-    const r = 85;
+    const cy = h / 2 + 12;
     const maxSpeed = 150;
-    const startAngle = Math.PI;
-    const endAngle = 2 * Math.PI;
+    // 240-degree arc: from 150° to 390° (= 30°)
+    const sweepDeg = 240;
+    const gapDeg = (360 - sweepDeg) / 2;
+    const startAngle = (90 + gapDeg) * Math.PI / 180;
+    const endAngle = startAngle + sweepDeg * Math.PI / 180;
     const speedRatio = Math.min(speed / maxSpeed, 1);
     const needleAngle = startAngle + speedRatio * (endAngle - startAngle);
+    const sweep = endAngle - startAngle;
 
-    // Background arc track
+    // Timestamp for subtle animations
+    if (!this._gaugeTime) this._gaugeTime = 0;
+    this._gaugeTime += 0.02;
+    const t_anim = this._gaugeTime;
+
+    // === Layer 1: Ambient radial glow behind gauge ===
+    const ambGlow = ctx.createRadialGradient(cx, cy, 20, cx, cy, 110);
+    ambGlow.addColorStop(0, 'rgba(0, 100, 200, 0.06)');
+    ambGlow.addColorStop(0.5, 'rgba(0, 60, 140, 0.03)');
+    ambGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.beginPath();
-    ctx.arc(cx, cy, r, startAngle, endAngle);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.stroke();
+    ctx.arc(cx, cy, 110, 0, Math.PI * 2);
+    ctx.fillStyle = ambGlow;
+    ctx.fill();
 
-    // Colored arc (gradient segments)
-    const segments = 60;
-    for (let i = 0; i < segments; i++) {
-      const t = i / segments;
-      if (t > speedRatio) break;
-      const a1 = startAngle + t * Math.PI;
-      const a2 = startAngle + (t + 1.2 / segments) * Math.PI;
+    // === Layer 2: Outermost decorative micro-tick ring ===
+    const rMicro = 88;
+    for (let i = 0; i < 80; i++) {
+      const t = i / 80;
+      const angle = startAngle + t * sweep;
+      const len = (i % 4 === 0) ? 4 : 2;
       ctx.beginPath();
-      ctx.arc(cx, cy, r, a1, a2);
-      let color;
-      if (t < 0.4) {
-        const p = t / 0.4;
-        color = `rgb(${0}, ${Math.round(200 + p * 55)}, ${Math.round(100)})`;
-      } else if (t < 0.7) {
-        const p = (t - 0.4) / 0.3;
-        color = `rgb(${0}, ${Math.round(255 - p * 85)}, ${Math.round(100 + p * 155)})`;
-      } else {
-        const p = (t - 0.7) / 0.3;
-        color = `rgb(${Math.round(p * 255)}, ${Math.round(170 - p * 130)}, ${Math.round(255 - p * 200)})`;
-      }
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 10;
-      ctx.lineCap = 'round';
+      ctx.moveTo(cx + Math.cos(angle) * rMicro, cy + Math.sin(angle) * rMicro);
+      ctx.lineTo(cx + Math.cos(angle) * (rMicro + len), cy + Math.sin(angle) * (rMicro + len));
+      ctx.strokeStyle = (i % 4 === 0) ? 'rgba(0, 180, 255, 0.2)' : 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 0.5;
       ctx.stroke();
     }
 
-    // Tick marks
+    // === Layer 3: Outer dashed decorative ring ===
+    const rOuter = 84;
+    ctx.save();
+    ctx.setLineDash([1.5, 6]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOuter, startAngle, endAngle);
+    ctx.strokeStyle = 'rgba(0, 170, 255, 0.15)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.restore();
+
+    // === Layer 4: Main arc background with glow ===
+    const rMain = 74;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 100, 200, 0.2)';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rMain, startAngle, endAngle);
+    ctx.strokeStyle = 'rgba(0, 100, 200, 0.04)';
+    ctx.lineWidth = 16;
+    ctx.stroke();
+    ctx.restore();
+
+    // === Layer 5: Segmented background track ===
+    const totalSegs = 48;
+    const segGap = 0.008;
+    for (let i = 0; i < totalSegs; i++) {
+      const t0 = i / totalSegs;
+      const t1 = (i + 1) / totalSegs;
+      const a1 = startAngle + t0 * sweep + segGap;
+      const a2 = startAngle + t1 * sweep - segGap;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rMain, a1, a2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'butt';
+      ctx.stroke();
+    }
+
+    // === Layer 6: Active segmented arc with dynamic color + neon glow ===
+    for (let i = 0; i < totalSegs; i++) {
+      const t = i / totalSegs;
+      if (t > speedRatio) break;
+      const a1 = startAngle + t * sweep + segGap;
+      const a2 = startAngle + ((i + 1) / totalSegs) * sweep - segGap;
+
+      // Color zones: cyan -> blue -> purple -> red
+      let r, g, b;
+      if (t < 0.3) {
+        const p = t / 0.3;
+        r = 0; g = Math.round(220 + p * 35); b = Math.round(160 + p * 40);
+      } else if (t < 0.55) {
+        const p = (t - 0.3) / 0.25;
+        r = 0; g = Math.round(255 - p * 80); b = 255;
+      } else if (t < 0.8) {
+        const p = (t - 0.55) / 0.25;
+        r = Math.round(p * 180); g = Math.round(175 - p * 100); b = Math.round(255 - p * 30);
+      } else {
+        const p = (t - 0.8) / 0.2;
+        r = Math.round(180 + p * 75); g = Math.round(75 - p * 55); b = Math.round(225 - p * 160);
+      }
+
+      // Brightness pulse near tip
+      const distFromTip = Math.abs(t - speedRatio);
+      const pulse = distFromTip < 0.06 ? 1 + (1 - distFromTip / 0.06) * 0.4 : 1;
+
+      ctx.save();
+      ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.7)`;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rMain, a1, a2);
+      ctx.strokeStyle = `rgba(${Math.min(255, Math.round(r * pulse))}, ${Math.min(255, Math.round(g * pulse))}, ${Math.min(255, Math.round(b * pulse))}, 1)`;
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'butt';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // === Layer 7: Inner decorative ring ===
+    const rInner = 62;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rInner, startAngle, endAngle);
+    ctx.strokeStyle = 'rgba(0, 170, 255, 0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Second inner ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, rInner - 3, startAngle, endAngle);
+    ctx.strokeStyle = 'rgba(0, 170, 255, 0.03)';
+    ctx.lineWidth = 0.3;
+    ctx.stroke();
+
+    // === Layer 8: Major tick marks + speed labels ===
     for (let i = 0; i <= 6; i++) {
       const t = i / 6;
-      const angle = startAngle + t * Math.PI;
-      const inner = r - 16;
-      const outer = r - 8;
+      const angle = startAngle + t * sweep;
+      const outer = rMain + 8;
+      const inner = rMain - 8;
+
+      // Major tick - glowing line
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 200, 255, 0.3)';
+      ctx.shadowBlur = 4;
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
       ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.strokeStyle = 'rgba(0, 200, 255, 0.5)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
+      ctx.restore();
 
-      const labelR = r - 24;
+      // Speed label
+      const labelR = rMain + 16;
       const label = Math.round(maxSpeed * t);
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '8px "Segoe UI"';
+      ctx.fillStyle = 'rgba(0, 200, 255, 0.55)';
+      ctx.font = 'bold 9px "Segoe UI"';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(label, cx + Math.cos(angle) * labelR, cy + Math.sin(angle) * labelR);
     }
 
-    // Needle
-    const needleLen = r - 20;
+    // Minor ticks
+    for (let i = 0; i <= 30; i++) {
+      if (i % 5 === 0) continue;
+      const t = i / 30;
+      const angle = startAngle + t * sweep;
+      const outer = rMain + 3;
+      const inner = rMain - 3;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+      ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // === Layer 9: Scanning sweep line (animated) ===
+    const scanAngle = startAngle + ((t_anim * 0.3) % 1) * sweep;
+    const scanLen = 50;
+    for (let i = 0; i < scanLen; i++) {
+      const t = i / scanLen;
+      const a = scanAngle - t * 0.3;
+      if (a < startAngle) break;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * (rInner + 2), cy + Math.sin(a) * (rInner + 2));
+      ctx.lineTo(cx + Math.cos(a) * (rMain - 2), cy + Math.sin(a) * (rMain - 2));
+      ctx.strokeStyle = `rgba(0, 200, 255, ${0.08 * (1 - t)})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // === Layer 10: Glowing orb at active arc tip ===
+    if (speedRatio > 0.01) {
+      const tipAngle = startAngle + speedRatio * sweep;
+      const tipX = cx + Math.cos(tipAngle) * rMain;
+      const tipY = cy + Math.sin(tipAngle) * rMain;
+
+      // Outer glow
+      const glow1 = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, 18);
+      glow1.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+      glow1.addColorStop(0.2, 'rgba(0, 220, 255, 0.5)');
+      glow1.addColorStop(0.5, 'rgba(0, 150, 255, 0.15)');
+      glow1.addColorStop(1, 'rgba(0, 100, 255, 0)');
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 18, 0, Math.PI * 2);
+      ctx.fillStyle = glow1;
+      ctx.fill();
+
+      // Core dot
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+
+    // === Layer 11: Triangle needle ===
+    const needleLen = rInner - 2;
+    const nx = cx + Math.cos(needleAngle) * needleLen;
+    const ny = cy + Math.sin(needleAngle) * needleLen;
+
+    // Needle glow trail
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 200, 255, 0.5)';
+    ctx.shadowBlur = 14;
+
+    // Triangle needle shape
+    const perpAngle = needleAngle + Math.PI / 2;
+    const baseW = 4;
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(needleAngle) * needleLen, cy + Math.sin(needleAngle) * needleLen);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    ctx.moveTo(nx, ny); // tip
+    ctx.lineTo(cx + Math.cos(perpAngle) * baseW, cy + Math.sin(perpAngle) * baseW);
+    ctx.lineTo(cx - Math.cos(perpAngle) * baseW, cy - Math.sin(perpAngle) * baseW);
+    ctx.closePath();
+
+    const needleGrad = ctx.createLinearGradient(cx, cy, nx, ny);
+    needleGrad.addColorStop(0, 'rgba(0, 150, 255, 0.3)');
+    needleGrad.addColorStop(0.7, 'rgba(200, 230, 255, 0.8)');
+    needleGrad.addColorStop(1, '#ffffff');
+    ctx.fillStyle = needleGrad;
+    ctx.fill();
+    ctx.restore();
+
+    // Needle edge highlight
+    ctx.beginPath();
+    ctx.moveTo(nx, ny);
+    ctx.lineTo(cx + Math.cos(perpAngle) * baseW, cy + Math.sin(perpAngle) * baseW);
+    ctx.strokeStyle = 'rgba(0, 200, 255, 0.3)';
+    ctx.lineWidth = 0.5;
     ctx.stroke();
 
-    // Center dot
+    // === Layer 12: Center hub (multi-ring) ===
+    // Outer ring glow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 200, 255, 0.4)';
+    ctx.shadowBlur = 12;
     ctx.beginPath();
-    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#00aaff';
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 15, 30, 0.95)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 170, 255, 0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 200, 255, 0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    const corePulse = 0.7 + 0.3 * Math.sin(t_anim * 3);
+    ctx.fillStyle = `rgba(0, 220, 255, ${corePulse})`;
     ctx.fill();
 
-    // Glow on needle tip
-    const tipX = cx + Math.cos(needleAngle) * needleLen;
-    const tipY = cy + Math.sin(needleAngle) * needleLen;
-    const glow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, 8);
-    glow.addColorStop(0, 'rgba(0, 170, 255, 0.4)');
-    glow.addColorStop(1, 'rgba(0, 170, 255, 0)');
+    // Hub glow
+    const hubGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 20);
+    hubGlow.addColorStop(0, 'rgba(0, 200, 255, 0.2)');
+    hubGlow.addColorStop(1, 'rgba(0, 200, 255, 0)');
     ctx.beginPath();
-    ctx.arc(tipX, tipY, 8, 0, Math.PI * 2);
-    ctx.fillStyle = glow;
+    ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+    ctx.fillStyle = hubGlow;
     ctx.fill();
+
+    // === Layer 13: Digital speed readout ===
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    // Large speed number
+    ctx.shadowColor = 'rgba(0, 200, 255, 0.9)';
+    ctx.shadowBlur = 16;
+    ctx.font = 'bold 32px "Segoe UI"';
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(Math.round(speed), cx, cy - 20);
+
+    // km/h label
+    ctx.shadowBlur = 0;
+    ctx.font = '600 10px "Segoe UI"';
+    ctx.fillStyle = 'rgba(0, 200, 255, 0.7)';
+    ctx.fillText('km/h', cx, cy - 10);
+    ctx.restore();
+
+    // === Layer 14: Status zone indicator at bottom ===
+    let zoneText, zoneColor;
+    if (speedRatio < 0.4) {
+      zoneText = 'NORMAL';
+      zoneColor = 'rgba(0, 220, 150, 0.7)';
+    } else if (speedRatio < 0.7) {
+      zoneText = 'HIZ';
+      zoneColor = 'rgba(0, 180, 255, 0.7)';
+    } else {
+      zoneText = 'MAKSIMUM';
+      zoneColor = 'rgba(255, 80, 80, 0.8)';
+    }
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 7px "Segoe UI"';
+    ctx.letterSpacing = '2px';
+    ctx.fillStyle = zoneColor;
+    ctx.fillText(zoneText, cx, cy + 18);
+    ctx.restore();
+
+    // === Layer 15: Decorative corner data markers ===
+    ctx.save();
+    ctx.font = '7px "Segoe UI"';
+    ctx.fillStyle = 'rgba(0, 170, 255, 0.25)';
+    ctx.textAlign = 'left';
+    ctx.fillText('MAX ' + maxSpeed, 6, 12);
+    ctx.textAlign = 'right';
+    ctx.fillText('HLR-01', w - 6, 12);
+    ctx.restore();
   }
 
   drawTempChart(canvas, histories, colors, threshold, minY, maxY) {
