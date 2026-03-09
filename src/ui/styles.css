@@ -36,21 +36,23 @@ body {
 /* Top Bar */
 .top-bar {
   position: absolute;
-  top: 16px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(10, 10, 30, 0.85);
+  background: rgba(10, 10, 30, 0.9);
   border: 1px solid rgba(0, 136, 255, 0.3);
-  border-radius: 12px;
-  padding: 10px 24px;
+  border-radius: 10px;
+  padding: 6px 20px;
   backdrop-filter: blur(12px);
+  pointer-events: auto;
+  z-index: 10;
 }
 
 .top-bar .logo {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -61,9 +63,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -75,15 +77,9 @@ body {
   border: 1px solid rgba(0, 200, 100, 0.3);
 }
 
-.status-badge.offline {
-  background: rgba(200, 50, 50, 0.15);
-  color: #cc3333;
-  border: 1px solid rgba(200, 50, 50, 0.3);
-}
-
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: currentColor;
   animation: pulse 2s infinite;
@@ -94,31 +90,177 @@ body {
   50% { opacity: 0.4; }
 }
 
-/* Info Panel - Left Side */
-.info-panel {
+/* ===== Dashboard Layout ===== */
+.dashboard-layout {
   position: absolute;
-  top: 80px;
-  left: 16px;
-  width: 280px;
+  top: calc(15vh + 38px);
+  left: 12px;
+  right: 12px;
+  bottom: 60px;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 10px;
   pointer-events: auto;
+  align-content: start;
 }
 
-.panel-card {
-  background: rgba(10, 10, 30, 0.85);
-  border: 1px solid rgba(0, 136, 255, 0.2);
+.layout-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Section Groups */
+.section-group {
+  border: 1px solid rgba(0, 136, 255, 0.12);
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
+  background: rgba(5, 5, 20, 0.5);
+  overflow: hidden;
+}
+
+.section-title {
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: #00aaff;
+  background: rgba(0, 136, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 136, 255, 0.12);
+}
+
+.section-content {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sensor-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.motor-status-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* ===== Camera Panel ===== */
+.camera-viewport {
+  width: 100%;
+  height: 160px;
+  background: #050510;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 136, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.camera-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #334455;
+  font-size: 11px;
+}
+
+.camera-icon {
+  font-size: 28px;
+  opacity: 0.4;
+}
+
+.camera-hint {
+  font-size: 9px;
+  color: #223344;
+}
+
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 12px;
+}
+
+.camera-info {
+  display: flex;
+  gap: 16px;
+}
+
+.camera-info .metric {
+  margin-bottom: 0;
+  gap: 6px;
+}
+
+.camera-brightness {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cam-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+}
+
+.cam-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0088ff;
+  cursor: pointer;
+  border: 2px solid #00aaff;
+}
+
+.cam-status-badge {
+  float: right;
+  font-size: 9px;
+  font-weight: 500;
+  color: #667788;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cam-status-badge .status-dot {
+  width: 5px;
+  height: 5px;
+  background: #667788;
+  animation: none;
+}
+
+/* Card Base */
+.panel-card {
+  background: rgba(10, 10, 30, 0.88);
+  border: 1px solid rgba(0, 136, 255, 0.15);
+  border-radius: 10px;
+  padding: 12px;
   backdrop-filter: blur(12px);
 }
 
 .panel-card h3 {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2px;
   color: #668899;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 /* Metric Rows */
@@ -126,7 +268,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .metric:last-child {
@@ -134,31 +276,31 @@ body {
 }
 
 .metric-label {
-  font-size: 12px;
+  font-size: 11px;
   color: #778899;
 }
 
 .metric-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #ffffff;
 }
 
 .metric-unit {
-  font-size: 11px;
+  font-size: 10px;
   color: #556677;
-  margin-left: 4px;
+  margin-left: 3px;
 }
 
 /* Progress Track */
 .track-progress {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .progress-bar-bg {
   width: 100%;
-  height: 6px;
+  height: 5px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 3px;
   overflow: hidden;
@@ -175,28 +317,125 @@ body {
 .progress-labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
-  font-size: 10px;
+  margin-top: 4px;
+  font-size: 9px;
   color: #556677;
 }
 
-/* Sensor Panel - Right Side */
-.sensor-panel {
-  position: absolute;
-  top: 80px;
-  right: 16px;
-  width: 280px;
-  pointer-events: auto;
+/* Speed Gauge */
+.speed-gauge-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+.speed-gauge {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+}
+
+.speed-gauge-text {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.speed-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #00aaff, #00ffaa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.speed-unit {
+  display: block;
+  font-size: 10px;
+  color: #556677;
+  margin-top: 1px;
+}
+
+/* ===== Energy Panels ===== */
+.energy-big-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.energy-big {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.energy-big-value {
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.energy-big-unit {
+  font-size: 12px;
+  font-weight: 600;
+  color: #556677;
+}
+
+.card-badge {
+  font-size: 9px;
+  font-weight: 400;
+  color: #556677;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.temp-chart-label {
+  font-size: 9px;
+  color: #556677;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 6px 0 4px;
+}
+
+.temp-chart {
+  width: 100%;
+  height: 70px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.threshold-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: #aa4444;
+  margin-top: 4px;
+}
+
+.threshold-line-icon {
+  width: 16px;
+  height: 0;
+  border-top: 2px dashed #ff2222;
+}
+
+/* ===== Sensor Cards ===== */
 .sensor-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -216,8 +455,8 @@ body {
 .sensor-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .sensor-header h3 {
@@ -226,9 +465,9 @@ body {
 
 .sensor-status {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -245,63 +484,41 @@ body {
 }
 
 .stripe-number {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 800;
   color: #ffffff;
   line-height: 1;
 }
 
 .stripe-number .stripe-total {
-  font-size: 14px;
+  font-size: 12px;
   color: #556677;
   font-weight: 400;
 }
 
-/* Speed Display */
-.speed-display {
-  text-align: center;
-  padding: 8px 0;
-}
-
-.speed-value {
-  font-size: 48px;
-  font-weight: 800;
-  line-height: 1;
-  background: linear-gradient(135deg, #00aaff, #00ffaa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.speed-unit {
-  font-size: 14px;
-  color: #556677;
-  margin-top: 4px;
-}
-
-/* Control Panel - Bottom */
+/* ===== Control Bar ===== */
 .control-bar {
   position: absolute;
-  bottom: 16px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  background: rgba(10, 10, 30, 0.85);
+  gap: 6px;
+  background: rgba(10, 10, 30, 0.9);
   border: 1px solid rgba(0, 136, 255, 0.2);
-  border-radius: 12px;
-  padding: 10px 16px;
+  border-radius: 10px;
+  padding: 8px 14px;
   backdrop-filter: blur(12px);
   pointer-events: auto;
 }
 
 .control-btn {
-  padding: 8px 20px;
+  padding: 6px 16px;
   border: 1px solid rgba(0, 136, 255, 0.3);
-  border-radius: 8px;
+  border-radius: 6px;
   background: rgba(0, 136, 255, 0.1);
   color: #aaccee;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -337,13 +554,13 @@ body {
 .sim-slider-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sim-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 200px;
+  width: 160px;
   height: 4px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
@@ -352,8 +569,8 @@ body {
 
 .sim-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #0088ff;
   cursor: pointer;
@@ -361,8 +578,8 @@ body {
 }
 
 .sim-slider-value {
-  font-size: 12px;
+  font-size: 11px;
   color: #aaccee;
   font-variant-numeric: tabular-nums;
-  min-width: 50px;
+  min-width: 45px;
 }
