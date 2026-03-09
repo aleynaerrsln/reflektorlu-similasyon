@@ -181,76 +181,88 @@ export class Track {
   }
 
   buildOmronStripes() {
-    const stripeWidth = 1.4; // ray genisligi kadar
-    const stripeHeight = 0.02;
+    // Tube center Y = 0.8, radius = 1.8 → top inside = 2.6
+    const tubeCenter = 0.8;
+    const tubeRadius = 1.8;
+    const ceilingY = tubeCenter + tubeRadius; // 2.6
 
-    // Materials
+    // Dome reflector geometry (half-sphere, pointing downward from ceiling)
+    const redReflectorGeo = new THREE.SphereGeometry(0.18, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+    const yellowReflectorGeo = new THREE.SphereGeometry(0.22, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+    const zoneReflectorGeo = new THREE.SphereGeometry(0.25, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+    const fineReflectorGeo = new THREE.SphereGeometry(0.1, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+
+    // Materials with emissive glow
     const redMat = new THREE.MeshBasicMaterial({ color: 0xff2222 });
     const yellowMat = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
-    const redYellowMat1 = new THREE.MeshBasicMaterial({ color: 0xff2222 });
-    const redYellowMat2 = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
+    const redGlowMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.25 });
+    const yellowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0.2 });
 
     this.stripeData.forEach(stripe => {
       const z = this.realToScene(stripe.pos);
 
       if (stripe.type === 'fine') {
-        // Ince isaretci cizgileri (5cm aralikli, dar)
-        const fineGeo = new THREE.BoxGeometry(stripeWidth * 0.6, stripeHeight, 0.015);
+        // Ince isaretci - kucuk dome
         const mat = stripe.color === 'yellow' ? yellowMat.clone() : redMat.clone();
         mat.transparent = true;
         mat.opacity = 0.9;
-        const mesh = new THREE.Mesh(fineGeo, mat);
-        mesh.position.set(0, 0.01, z);
+        const mesh = new THREE.Mesh(fineReflectorGeo, mat);
+        mesh.rotation.x = Math.PI; // flip upside down (dome pointing down)
+        mesh.position.set(0, ceilingY, z);
         this.group.add(mesh);
       } else if (stripe.type === 'regular') {
         if (stripe.color === 'redyellow') {
-          // Cift renkli cizgi: kirmizi + sari yan yana
-          const halfGeo = new THREE.BoxGeometry(stripeWidth / 2 - 0.02, stripeHeight, 0.06);
+          // Cift renkli: kirmizi + sari yan yana dome
+          const redDome = new THREE.Mesh(redReflectorGeo, redMat);
+          redDome.rotation.x = Math.PI;
+          redDome.position.set(-0.3, ceilingY, z);
+          this.group.add(redDome);
 
-          const redStripe = new THREE.Mesh(halfGeo, redYellowMat1);
-          redStripe.position.set(-stripeWidth / 4, 0.01, z);
-          this.group.add(redStripe);
-
-          const yellowStripe = new THREE.Mesh(halfGeo, redYellowMat2);
-          yellowStripe.position.set(stripeWidth / 4, 0.01, z);
-          this.group.add(yellowStripe);
+          const yellowDome = new THREE.Mesh(redReflectorGeo, yellowMat);
+          yellowDome.rotation.x = Math.PI;
+          yellowDome.position.set(0.3, ceilingY, z);
+          this.group.add(yellowDome);
         } else {
-          // Tek renk kirmizi cizgi
-          const geo = new THREE.BoxGeometry(stripeWidth, stripeHeight, 0.06);
-          const mesh = new THREE.Mesh(geo, redMat);
-          mesh.position.set(0, 0.01, z);
+          // Tek kirmizi dome
+          const mesh = new THREE.Mesh(redReflectorGeo, redMat);
+          mesh.rotation.x = Math.PI;
+          mesh.position.set(0, ceilingY, z);
           this.group.add(mesh);
         }
+
+        // Glow halo
+        const glowGeo = new THREE.PlaneGeometry(0.6, 0.6);
+        const gMat = stripe.color === 'redyellow' ? yellowGlowMat.clone() : redGlowMat.clone();
+        const glow = new THREE.Mesh(glowGeo, gMat);
+        glow.position.set(0, ceilingY - 0.02, z);
+        glow.rotation.x = -Math.PI / 2;
+        this.group.add(glow);
       } else if (stripe.type === 'special') {
-        // Ozel isaretci - daha kalin ve parlak
-        const specialGeo = new THREE.BoxGeometry(stripeWidth, stripeHeight * 2, 0.1);
-        const specialMat = new THREE.MeshBasicMaterial({
-          color: 0xffdd00,
-          emissive: 0xffdd00
-        });
-        const mesh = new THREE.Mesh(specialGeo, specialMat);
-        mesh.position.set(0, 0.015, z);
+        // Ozel isaretci - buyuk sari dome
+        const mesh = new THREE.Mesh(yellowReflectorGeo, yellowMat);
+        mesh.rotation.x = Math.PI;
+        mesh.position.set(0, ceilingY, z);
         this.group.add(mesh);
 
-        // Glow effect for special markers
-        const glowGeo = new THREE.PlaneGeometry(stripeWidth + 0.4, 0.4);
-        const glowMat = new THREE.MeshBasicMaterial({
-          color: 0xffdd00,
-          transparent: true,
-          opacity: 0.15,
-          side: THREE.DoubleSide
-        });
-        const glow = new THREE.Mesh(glowGeo, glowMat);
+        // Glow
+        const glowGeo = new THREE.PlaneGeometry(0.8, 0.8);
+        const glow = new THREE.Mesh(glowGeo, yellowGlowMat.clone());
+        glow.position.set(0, ceilingY - 0.02, z);
         glow.rotation.x = -Math.PI / 2;
-        glow.position.set(0, 0.02, z);
         this.group.add(glow);
       } else if (stripe.type === 'zone') {
-        // Bolge sinir cizgisi - kalin, belirgin
-        const zoneGeo = new THREE.BoxGeometry(stripeWidth + 0.4, stripeHeight * 3, 0.12);
-        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
-        const mesh = new THREE.Mesh(zoneGeo, zoneMat);
-        mesh.position.set(0, 0.02, z);
+        // Bolge sinir - buyuk kirmizi dome
+        const mesh = new THREE.Mesh(zoneReflectorGeo, new THREE.MeshBasicMaterial({ color: 0xff4444 }));
+        mesh.rotation.x = Math.PI;
+        mesh.position.set(0, ceilingY, z);
         this.group.add(mesh);
+
+        // Glow
+        const glowGeo = new THREE.PlaneGeometry(0.9, 0.9);
+        const glow = new THREE.Mesh(glowGeo, redGlowMat.clone());
+        glow.position.set(0, ceilingY - 0.02, z);
+        glow.rotation.x = -Math.PI / 2;
+        this.group.add(glow);
       }
 
       // Etiketi olan cizgilere label ekle
@@ -261,19 +273,16 @@ export class Track {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, 256, 64);
 
-        // Background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.roundRect(4, 4, 248, 56, 8);
         ctx.fill();
 
-        // Border
         const borderColor = stripe.color === 'yellow' ? '#ffdd00' : '#ff4444';
         ctx.strokeStyle = borderColor;
         ctx.lineWidth = 2;
         ctx.roundRect(4, 4, 248, 56, 8);
         ctx.stroke();
 
-        // Text
         ctx.fillStyle = borderColor;
         ctx.font = 'bold 24px monospace';
         ctx.textAlign = 'center';
@@ -283,7 +292,7 @@ export class Track {
         const spriteMat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
         const sprite = new THREE.Sprite(spriteMat);
         sprite.scale.set(1.8, 0.45, 1);
-        sprite.position.set(1.8, 0.6, z);
+        sprite.position.set(0, ceilingY + 0.5, z);
         this.group.add(sprite);
       }
     });
